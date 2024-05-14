@@ -1047,42 +1047,6 @@ end
 to removeDeadBands
   if individuals <= 0 [die]
 end
-
-to-report lushDensity
-  let lsum 0
-  let cts 1
-  ask farms with [habitat = 1 and any? bands-here][
-    let lsm sum [individuals] of bands-here
-    set lsum lsum + lsm
-    set cts cts + 1
-  ]
-  if cts != 1 [set cts cts - 1]
-  report lsum / (cts * 15)
-end
-
-to-report mediumDensity
-  let lsum 0
-  let cts 1
-  ask farms with [habitat = 2 and any? bands-here][
-    let lsm sum [individuals] of bands-here
-    set lsum lsum + lsm
-    set cts cts + 1
-  ]
-  if cts != 1 [set cts cts - 1]
-  report lsum / (cts * 15)
-end
-
-to-report desertDensity
-  let lsum 0
-  let cts 1
-  ask farms with [habitat = 3 and any? bands-here][
-    let lsm sum [individuals] of bands-here
-    set lsum lsum + lsm
-    set cts cts + 1
-  ]
-  if cts != 1 [set cts cts - 1]
-  report lsum / (cts * 15)
-end
 @#$#@#$#@
 GRAPHICS-WINDOW
 192
@@ -1105,8 +1069,8 @@ GRAPHICS-WINDOW
 10
 -10
 10
-0
-0
+1
+1
 1
 Turns
 1.0
@@ -1114,9 +1078,9 @@ Turns
 BUTTON
 0
 10
-188
+61
 46
-Pause/continue
+go
 go
 T
 1
@@ -1315,21 +1279,6 @@ Desert Habitat
 53.0
 1
 
-SLIDER
-7
-90
-185
-123
-birth-chance
-birth-chance
-1
-20
-20.0
-1
-1
-NIL
-HORIZONTAL
-
 PLOT
 748
 199
@@ -1492,7 +1441,7 @@ Time (year)
 0.0
 10.0
 0.0
-10.0
+2.0
 true
 false
 "" ""
@@ -1546,26 +1495,6 @@ migratedCount
 1
 11
 
-PLOT
-2
-588
-301
-759
-Band Density (agents per km2) over time
-Time (year)
-Agent Density
-0.0
-10.0
-0.0
-15.0
-true
-true
-"" ""
-PENS
-"Lush" 1.0 0 -13840069 true "" "plot lushDensity"
-"Medium" 1.0 0 -13345367 true "" "plot mediumDensity "
-"Desert" 1.0 0 -2674135 true "" "plot desertDensity"
-
 SLIDER
 7
 163
@@ -1595,6 +1524,43 @@ degradationFactor
 1
 NIL
 HORIZONTAL
+
+BUTTON
+74
+12
+137
+45
+step
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+PLOT
+12
+591
+338
+762
+Human population density
+Time (year)
+Population Density
+0.0
+10.0
+0.0
+0.6
+true
+true
+"" ""
+PENS
+"Lush" 1.0 0 -13840069 true "" "plot sum [individuals] of bands with [habitat = 1] / (count patches / 3 * sqKM)"
+"Medium" 1.0 0 -13345367 true "" "plot sum [individuals] of bands with [habitat = 2] / (count patches / 3 * sqKM)"
+"Desert" 1.0 0 -2674135 true "" "plot sum [individuals] of bands with [habitat = 3] / (count patches / 3 * sqKM)"
 
 @#$#@#$#@
 ## WHAT IS IT?
