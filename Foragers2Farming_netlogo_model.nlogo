@@ -150,7 +150,7 @@ to set-parameters
 
   set cerealEnergy 3390    ;// in kcals per kilo gathered
   set cerealHarvestTime  2;		// in hours per kilo gathered
-	set cerealGrowthRate 0.06;
+	set cerealGrowthRate 1 ; one in paper, changed from 0.06;
 	set cerealMaxNARAtPopulation 400  ;
   set cerealMaxKilos 600;			// in kilo's/hectare of cereal
 	set cerealMinKilos 0;			// in kilo's/hectare of cereal
@@ -159,8 +159,9 @@ to set-parameters
 
   set preyEnergy 13800;			      // in kcals per prey caught
 	set preyCatchTime 3.916667;		  // in hours per prey caught
-	set preyGrowthRate 0.3;			    // in individuals/year
-	set preyMaxNARAtPopulation 200;
+	set preyGrowthRate 0.7 ; 0.7 in paper, changed from original value of 0.3;			    // in individuals/year
+	set preyMaxNARAtPopulation 200; what is this?
+
   set individualsAtStart 20
 end
 
