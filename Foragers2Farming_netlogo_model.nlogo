@@ -143,8 +143,8 @@ to set-parameters
 	set minKilosToSpread 400;	// *was 1000, now checks with paper*
 
   set maxForageTime 14;
-  set maxFarmHectares 3000
-  set maxCerealKilosPerHectare 600;
+  set maxFarmHectares sqKM * 0.1 * 100 ; 100 hectares per sqkm, 10% arable land per patch
+  set maxCerealKilosPerHectare 600; ; does this need to be adjusted for sqkm too?
 	set hectaresPerHour 2;
 	set farmMaxNARAtPopulation 800;
 
@@ -351,7 +351,7 @@ to go
   move
   growCerealsPreysFarms
   if (sum [farmPop] of farms) > 0 [
-   if (mean [farmPop] of farms / 300) >= 5500 [stop]
+   if (mean [farmPop] of farms / sqKM) >= 5500 [stop]
   ]
   tick
 end
@@ -525,7 +525,7 @@ to decide
 end
 
 to-report averageCereal
-  report mean [cerealPop] of cereals / 300 ; sqrKm
+  report mean [cerealPop] of cereals / sqKM ; sqrKm
 end
 
 to growCerealsPreysFarms
@@ -1191,9 +1191,9 @@ true
 true
 "" ""
 PENS
-"Lush Prey Pop" 1.0 0 -2674135 true "" "plot mean [preyPop] of preys with [habitat = 1] / 300"
-"Medium Prey Pop" 1.0 0 -4699768 true "" "plot mean [preyPop] of preys with [habitat = 2] / 300"
-"Desert Prey Pop" 1.0 0 -1184463 true "" "plot mean [preyPop] of preys with [habitat = 3] / 300"
+"Lush Prey Pop" 1.0 0 -2674135 true "" "plot (mean [preyPop] of preys with [habitat = 1]) / sqKM"
+"Medium Prey Pop" 1.0 0 -4699768 true "" "plot (mean [preyPop] of preys with [habitat = 2]) / sqKM"
+"Desert Prey Pop" 1.0 0 -1184463 true "" "plot (mean [preyPop] of preys with [habitat = 3]) / sqKM"
 
 MONITOR
 815
