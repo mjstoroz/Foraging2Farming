@@ -722,15 +722,17 @@ to growCerealsPreysFarms
   ]
 end
 
+to-report random-binomial [n p]
+  report sum n-values n [ifelse-value (p > random-float 1) [1] [0]]
+end
 
 to procreate
   ask bands [
     ; birth chance
+    set births random-binomial individuals 0.02 ; binomial draws for birth counts
     if (individuals > 0) [
-      if (random-float 1 < (0.02 * birth-chance)) [
-        set births births + 1
-        set individuals individuals + 1
-        if individuals > individualsAtStart * 2 and count bands < 1120 + random 100 [
+        set individuals individuals + births
+        if individuals > (individualsAtStart * 2) [ ; and count bands < (1120 + random 100)
           set individuals individuals - individualsAtStart
           let hab habitat
           ; adding a new band
@@ -754,7 +756,6 @@ to procreate
             ]
           ]
         ]
-      ]
     ]
   ]
 end
