@@ -1,14 +1,16 @@
 ;==== all global variables
 globals[
-  flag
-  cnt
+  flag ; what's this?
+  ;cnt ; what's this?
   doIFarm
   showFarm
-  startFarm
-  maxPopulation     ;= 20;
+  ;startFarm
   sqKM              ;=300
   scale
   staticZeroNar
+
+  births
+  deaths
 
   migratedCount
 
@@ -16,26 +18,25 @@ globals[
   searchRadius      ; 0.0175 in kilometers/hour
   catchCost         ; 6*60 in kcals/hour
   searchCost        ; 4*60 in kcals/hour
-  energyRequirement  ; 2000 in kcals/day
+  energyRequirement  ; 2000 in kcals/day * 365 days
 
-  rePopChance ;  = 0.10;		// *was 0.05, now checks with paper*
-	minNumToMigrate ; = 100;	// *was 10, now checks with paper*
-	minKilosToSpread ;  = 400;	// *was 1000, now checks with paper*
+  rePopChance ;  = 0.10;		 *was 0.05, now checks with paper*
+	minNumToMigrate ; = 100;	 *was 10, now checks with paper*
+	minKilosToSpread ;  = 400;	 *was 1000, now checks with paper*
 	
-  preyEnergy ;13800;			      // in kcals per prey caught
-	preyCatchTime ;3.916667;		  // in hours per prey caught
-	preyGrowthRate ;0.7;			    // in individuals/year
+  preyEnergy ;13800;			       in kcals per prey caught
+	preyCatchTime ;3.916667;		   in hours per prey caught
+	preyGrowthRate ;0.7;			     in individuals/year
 	preyMaxNARAtPopulation ;200;
-  ;pNAR
 	
-  cerealEnergy ;3390    ;// in kcals per kilo gathered
-  cerealHarvestTime  ;2;		// in hours per kilo gathered
+  cerealEnergy ;3390    ; in kcals per kilo gathered
+  cerealHarvestTime  ;2;		 in hours per kilo gathered
 	cerealGrowthRate ;1;
  	cerealMaxNARAtPopulation ;400  ;
-  cerealMaxKilos ;= 600;			// in kilo's/hectare of cereal
-	cerealMinKilos ;= 0;			// in kilo's/hectare of cereal
-  cerealMaxHectaresPerKM ;1     ;	// percent/kilometer
-	cerealMinHectaresPerKM ;1     ;	// percent/kilometer
+  cerealMaxKilos ;= 600;			 in kilo's/hectare of cereal
+	cerealMinKilos ;= 0;			 in kilo's/hectare of cereal
+  cerealMaxHectaresPerKM ;1     ;	 percent/kilometer
+	cerealMinHectaresPerKM ;1     ;	 percent/kilometer
   ;cNAR
 	maxFarmHectares           ; = 3000;
 	maxCerealKilosPerHectare  ; = 600;
@@ -43,7 +44,6 @@ globals[
 	farmMaxNARAtPopulation    ; = 800;
 
 ;  cerealFarmTime
-  ;fNAR
 	
 	reproductionChance        ; = 0.02;
 	minBandSize               ; = 20;
@@ -64,54 +64,49 @@ breed[bands band]
 preys-own [
   maxVal
   habitat ; 1-lush, 2-medium, 3-desert
-  preyPop
+  pop
+  energy
+  handling-time
   maxPop
-  preyNar
-  tLeft
-  preyHuntTime
-  preySearchTime
-  preyDensity
+  NAR
+  ;tLeft
   growth
 ]
 
 ;=== cereal agent and its variables
 cereals-own [
   habitat ; 1-lush, 2-medium, 3-desert
-  cerealPop
+  pop
+  energy
+  handling-time
   farmPop
   maxFarm
   maxPop
-  cerealNar
-  tLeft
-  cerealSearchTime
-  cerealGatherTime
+  NAR
+  ;tLeft
   growth
 ]
-
 
 ;=== farm agent and its variables
 farms-own[
   habitat ; 1-lush, 2-medium, 3-desert
   maxFarm ; = (0.25 * (1000 - cerealGradient * p.maxCerealKilosPerHectare)
-				  ;    + (cerealGradient * p.maxCerealKilosPerHectare)) * p.maxFarmHectares; // *was 600, changed to 1000, as paper records*
+				  ;    + (cerealGradient * p.maxCerealKilosPerHectare)) * p.maxFarmHectares;  *was 600, changed to 1000, as paper records*
 	cerealGradient;
   cerealKilos ; = (cerealGradient * (p.cerealMaxKilos - p.cerealMinKilos)) + p.cerealMinKilos;
-	extraCerealKilos ;= 0.25 * (1000 - cerealKilos); // *was 600, changed to 1000, as paper records*
+	extraCerealKilos ;= 0.25 * (1000 - cerealKilos);  *was 600, changed to 1000, as paper records*
 	cerealFarmTime ;= (1 / (p.hectaresPerHour * (cerealKilos + extraCerealKilos))) * 365 + p.cerealHarvestTime;
 	maxFarmersDensity; = ((max * (p.cerealEnergy - cerealFarmTime * 6 * 60)) / (p.energyRequirement * 365)) / myCell.sqKM;
-	farmNar
+	NAR
   farmPop
-  tLeft
+  ;tLeft
   technology ; efficiency in which agriculture is practiced. More experienced lead to lower loss of soil
 ]
 
 ;=== band agent and its variables
 bands-own [
   individuals
-  births
-  deaths
   habitat
-  timeLeft
   energyHunted
   energyGathered
   energyFarmed
@@ -126,44 +121,485 @@ to set-parameters
   set flag false
   set doIFarm false
   set showFarm false
-  set startFarm false
-  set cnt 0
+ ; set startFarm false
+  ;set cnt 0
   set migratedCount 0
-  set maxPopulation 20;
   set sqKM 300
   set scale 2
   set searchSpeed  0.5     ; in kilometers/hour
   set searchRadius 0.0175  ; in kilometers/hour
   set catchCost  (6 * 60)    ;in kcals/hour
   set searchCost (4 * 60)    ; in kcals/hour
-  set energyRequirement 2000;  in kcals/day
+  set energyRequirement 365 * 2000;  in kcals/year
 
-  set rePopChance 0.10;		// *was 0.05, now checks with paper*
-	set minNumToMigrate 100;	// *was 10, now checks with paper*
-	set minKilosToSpread 400;	// *was 1000, now checks with paper*
+  set rePopChance 0.10;		 *was 0.05, now checks with paper*
+	set minNumToMigrate 100;	 *was 10, now checks with paper*
+	set minKilosToSpread 400;	 *was 1000, now checks with paper*
 
   set maxForageTime 14;
   set maxFarmHectares sqKM * 0.1 * 100 ; 100 hectares per sqkm, 10% arable land per patch
-  set maxCerealKilosPerHectare 600; ; does this need to be adjusted for sqkm too?
+  set maxCerealKilosPerHectare 600 ; does this need to be adjusted for sqkm too?
 	set hectaresPerHour 2;
 	set farmMaxNARAtPopulation 800;
 
-  set cerealEnergy 3390    ;// in kcals per kilo gathered
-  set cerealHarvestTime  2;		// in hours per kilo gathered
+  set cerealEnergy 3390    ; in kcals per kilo gathered
+  set cerealHarvestTime  2;		 in hours per kilo gathered
 	set cerealGrowthRate 1 ; one in paper, changed from 0.06;
 	set cerealMaxNARAtPopulation 400  ;
-  set cerealMaxKilos 600;			// in kilo's/hectare of cereal
-	set cerealMinKilos 0;			// in kilo's/hectare of cereal
-  set cerealMaxHectaresPerKM 1     ;	// percent/kilometer
-	set cerealMinHectaresPerKM 1     ;	// percent/kilometer
+  set cerealMaxKilos 600;			 in kilo's/hectare of cereal
+	set cerealMinKilos 0;			 in kilo's/hectare of cereal
+  set cerealMaxHectaresPerKM 1     ;	 percent/kilometer
+	set cerealMinHectaresPerKM 1     ;	 percent/kilometer
 
-  set preyEnergy 13800;			      // in kcals per prey caught
-	set preyCatchTime 3.916667;		  // in hours per prey caught
-	set preyGrowthRate 0.7 ; 0.7 in paper, changed from original value of 0.3;			    // in individuals/year
+  set preyEnergy 13800;			       in kcals per prey caught
+	set preyCatchTime 3.916667;		   in hours per prey caught
+	set preyGrowthRate 0.7 ; 0.7 in paper, changed from original value of 0.3;			     in individuals/year
 	set preyMaxNARAtPopulation 200; what is this?
 
   set individualsAtStart 20
+
+  set staticZeroNar -1000000 ; to avoid divide by zero errors when densities are 0 and searchtimes are infinite
 end
+
+
+
+
+;==== initialize the simulation
+to setup
+  clear-all
+
+  set-parameters
+  create-agents
+  if not doIHunt? [set flag true]
+
+  reset-ticks
+end
+
+
+to go
+  procreate
+  fission
+
+  move
+
+  growCerealsPreysFarms
+
+  tick
+end
+
+
+to procreate
+  set births 0
+  ask bands [
+    let band-births random-binomial individuals 0.02 ; binomial draws for birth counts
+    set individuals individuals + band-births
+    set births births + band-births
+  ]
+end
+
+to fission
+  ask bands [
+  if individuals > (individualsAtStart * 2) [
+    set individuals individuals - individualsAtStart
+    ;let hab habitat
+    ; adding a new band
+    hatch-bands 1 [
+      ;set SIZE 0.65
+      ;set color black
+      ;set shape "circle"
+      ;      set habitat hab
+     set individuals individualsAtStart
+
+     set label individuals
+     set label-color green
+     ;if showFarm [ set individualsAtStart (individualsAtStart + 20) show individualsAtStart ]
+   ;  ifelse doIHunt?  [
+    ;    move-to max-one-of preys with [habitat = hab][preyNAR] ; when is preyNAR calculate?
+    ;     ][
+    ;    ifelse not showFarm [
+    ;     move-to max-one-of cereals with [habitat = hab][cerealNAR]
+    ;         ][ move-to max-one-of farms with [habitat = hab][NAR] ]
+    ;       ]
+      ]
+    ]
+  ]
+end
+
+
+to-report random-binomial [n p]
+  report sum n-values n [ifelse-value (p > random-float 1) [1] [0]]
+end
+
+to move
+  ask bands [
+    decide
+    let indvs 0
+    ask bands-on farms-here [
+      set indvs indvs + individuals
+    ]
+    set label indvs
+
+    move-update
+
+    set deaths 0
+    eat-and-die
+
+
+    let hab 0
+    ask farms-here [ set hab habitat]
+    ifelse hab != habitat [
+      set migratedCount migratedCount + 1
+      set habitat hab
+      set duration 1
+    ][set duration duration + 1]
+
+ ]
+end
+
+to decide
+  let bestCell one-of preys with [NAR > 0 and not any? other bands-here]
+  ;----- go to prey first
+  if doIHunt? [
+    set flag false
+    set bestCell one-of preys with [NAR > 0 and not any? other bands-here]
+    ;if cnt = 0 [ show "go for prey" set cnt 1]
+    ask preys [
+      set NAR calculateNAR  ; this should be update more often? because it changes with density
+      if bestCell != nobody and NAR > (max list 0 [NAR] of bestCell) [
+        set bestCell one-of preys-here
+      ]
+      if bestCell = nobody [
+        set flag true
+      ]
+    ]
+  ]
+
+  ;----- then go for cereals
+  if flag [
+    set bestCell one-of cereals with [NAR > 0 and not any? other bands-here]
+   ; if cnt <= 1 [ show "go for cereals" set cnt 2]
+    ask cereals [
+      set NAR calculateNAR
+      if bestCell != nobody and NAR > (max list 0 [NAR] of bestCell) [
+        set bestCell one-of cereals-here
+      ]
+    ]
+
+  ]
+  ifelse bestCell != nobody [
+    move-to one-of farms-on bestCell
+   ; let cAvg averageCereal
+   ; if cAvg < 185 [ ; why is this necessary?
+    ;   set startFarm true
+       ;show "startFarm"
+    ;]
+  ]
+  [
+    ;---finally move to farm
+    if doFarm?  [ ; and doIFarm and startFARM -- what does that do?
+      ;----go for farm
+      let cAvg averageCereal
+      ; FarmAverage 100 showing the farm
+    ;  if cAvg < 50 [set showFarm true ]
+        set bestCell one-of farms-here
+        ask farms [
+          if NAR > [NAR] of bestCell and canSustainMoreFarmers [
+            set bestCell one-of farms-here
+          ]
+        ]
+
+;        ask farms-here [
+;          if (not hasFreeLand) [
+;            ask farms[
+;              if canSustainMoreFarmers[
+;                set bestCell one-of farms-here
+;                ; show (word " not hasFreeLand bestcell is " bestCell)
+;              ]
+;            ]
+;          ]
+;        ]
+        move-to bestCell
+      ]
+  ]
+end
+
+to-report averageCereal
+  report mean [pop] of cereals / sqKM ; sqrKm
+end
+
+to growCerealsPreysFarms
+   ;==== growing cereals OR Farm
+   ask cereals [
+    if maxPop > 0 [
+     ifelse (pop <= 0) [
+      let cereal-neighbors other cereals-on neighbors
+      let viable-neighbors count cereal-neighbors with [pop >= minKilosToSpread]
+      if viable-neighbors > 0 [ ; this could/should happen once for every viable neighbor?
+        if random-float 1 < rePopChance[
+         	set pop minKilosToSpread
+        ]
+     ]
+    ][
+        set pop pop * (maxPop * growth) / (maxPop - (pop * (1 - growth))) ; this is correct, but note the equation is wrong in the paper
+     ]
+            set nar calculateNAR
+    update-farms
+  ]
+  ]
+
+
+  ; growing preys
+  ask preys with [doIHunt?] [
+        if maxPop > 0 [
+    ifelse (pop <= 0) [ ; with all this wrapped in ask preys here, it means you conceivably have a restored patch restore another patch in the same time step -- should separate out
+      let prey-neighbors other preys-on neighbors
+      let viable-neighbors count prey-neighbors with [pop >= minNumToMigrate]
+      if viable-neighbors > 0 [ ; this could/should happen once for every viable neighbor?
+        if random-float 1 < rePopChance[
+         	set pop minNumToMigrate
+        ]
+     ]
+    ][
+			set pop pop * (maxPop * growth) / (maxPop - (pop * (1 - growth)))  ; this is correct, but note the equation is wrong in the paper
+  	]
+            set nar calculateNAR
+    update-preys
+  ]
+  ]
+end
+
+;to-report energyRequired [totalEnergy primaryNAR otherNAR]
+;		let otherTotal  0;
+;		set primaryNAR (max list 0 primaryNAR)
+;    foreach otherNAR [ x -> (set otherTotal otherTotal + (max list 0 x)) ]
+;		report (totalEnergy * primaryNAR / (primaryNAR + otherTotal))
+;end
+
+to-report diet-proportion [pNAR cNAR fNAR]
+  set pNAR (max list 0 pNAR)
+   set cNAR (max list 0 cNAR)
+   set fNAR (max list 0 fNAR)
+  if fNAR < cNAR [ set fNAR 0 ] ; only farm if NAR is greater than that for gathering
+  let total-nar pNAr + cNAR + fNAR
+  if total-nar = 0 [ report (list 0 0 0) ]
+  let prey-percent pNAR / total-nar
+  let cereal-percent cNAR / total-nar
+  let farm-percent fNAR / total-nar
+  report (list prey-percent cereal-percent farm-percent)
+end
+
+
+
+; need to update nar at some point
+
+to-report calculateEnergyReturns [ energyNeeded timeAvailable agent ]
+  let agentNAR [ nar ] of agent
+  let agentPop [ pop ] of agent
+  let gather-time [ handling-time ] of agent + calc-search-time (agentPop / sqKm)
+
+  ; this version doesn't lose energy explicitly from search and capture, but its implicit in the use of NAR, right?
+
+  let gatherable (min list agentPop (timeAvailable / gather-time))
+  let energy-per-unit agentNAR * gather-time
+  let units-needed energyNeeded / energy-per-unit
+  let units-gathered min list gatherable units-needed
+  let energy-obtained units-gathered * energy-per-unit
+  let time-used units-gathered * gather-time
+
+  report (list energy-obtained time-used units-gathered)
+end
+
+to-report calculateFarmEnergy [energyNeeded timeAvailable farmAgent]
+  		let fNAR [nar] of farmAgent
+  let farm-time [cerealFarmTime] of farmAgent
+  ;let tech [technology] of farmAgent
+    let cerealFarmable (timeAvailable / farm-time)
+
+    let timeToFarm (energyNeeded / fNAR)
+		let cerealNeeded energyNeeded / cerealEnergy
+
+		
+  let cerealFarmed (min list cerealFarmable cerealNeeded)
+	set cerealFarmed (max list 0 cerealFarmed);
+
+
+  let totduration 0
+  ask bands-here [ set totduration totduration + duration]
+;  ifelse totduration = 0
+ ;  [set technology 1 / (1 + learningfactor)]
+ ;  [set technology (totduration / (totduration + learningfactor))]
+
+  let output [0 0]
+  set output replace-item 0 output (cerealFarmed * cerealEnergy)
+	set output replace-item 1 output (cerealFarmed * farm-time)
+
+ ; set farmPop (min list maxFarm (farmPop * technology + cerealFarmed )) ; is this actually necessary?
+
+  ;if (cerealFarmed * cerealFarmTime) = 0 [show(word "farm population: " farmPop)]
+		;check-nan farmPop
+    ;show(word "calculateFarmEnergy cerealFarmTime: " cerealFarmTime)
+    ;show(word "calculateFarmEnergy cerealFarmed: " cerealFarmed)
+	  ;show(word "farm output: " output)
+    report output
+
+end
+
+to eat-and-die
+
+
+; Retrieve agents present at the band's location.
+  let preyAgent one-of preys-here
+  let cerealAgent one-of cereals-here
+  let farmAgent one-of farms-here
+
+  ; Calculate total energy requirement and total time available for foraging.
+		let energyLeft individuals * energyRequirement ; total annual energy requirement for band
+		let timeLeft 365 * individuals * maxForageTime ; total foraging time for band
+  	;let results [0 0] ; list to store results, first item is energy and second is time (?)
+
+  ; Initialize energy variables to 0 for the current time step.
+  set energyHunted 0
+  set energyGathered 0
+  set energyFarmed 0
+
+  ; reset times to zero
+		set timeHunted 0
+    set timeGathered 0
+    set timeFarmed 0
+
+  ; get NARs for the current patch
+  let pNAR ifelse-value doIHunt? [ [NAR] of preyAgent ] [ 0 ]
+    let cNAR [NAR] of cerealAgent ; agents always gather cereals
+  	let fNAR ifelse-value doFarm? [ [NAR] of farmAgent ] [ 0 ]
+
+  ; decide whether its worth farming
+  	;if doFarm? [set doIFarm  (round cNar) < (round fNar)] ; band decides to farm if cereal NAR less than farming NAR ; why is the rounding necessary?
+
+   let diet diet-proportion pnar cnar fnar ; get a list of the proportion of diet for each food type, based on NAR
+
+  ; determine energy required from prey
+  let preyEnergyRequired energyLeft * item 0 diet ;(energyRequired energyLeft pNAR (list cNAR fNAR)) ; is this necessary anymore?
+  let cerealEnergyRequired energyLeft * item 1 diet
+  let farmEnergyRequired energyLeft * item 2 diet
+
+  if (doIHunt? and preyEnergyRequired > 0 and pNAR > 0) [
+    let results calculateEnergyReturns preyEnergyRequired timeLeft preyAgent
+    set energyHunted item 0 results
+    set timeHunted item 1 results
+    ask preyAgent [
+      set pop pop - item 2 results
+      set nar calculateNAR
+    ]  ; Adjusting population
+
+     set energyLeft energyLeft - energyHunted
+     set timeLeft timeLeft - timeHunted
+  ]
+  ; Determine energy required from cereals
+  ;let cerealEnergyRequired (ifelse-value doIFarm [energyRequired energyLeft cNAR (list 0 fNAR)] [energyLeft])
+  if (cerealEnergyRequired > 0 and cNAR > 0) [
+       let results calculateEnergyReturns cerealEnergyRequired timeLeft cerealAgent
+
+    set energyGathered item 0 results
+    set timeGathered item 1 results
+    ask cerealAgent [
+      set pop pop - item 2 results
+           set nar calculateNAR
+    ]  ; Adjusting population
+     set energyLeft energyLeft - energyGathered
+     set timeLeft timeLeft - timeGathered
+  ]
+
+  ; Determine energy required from farming
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; does farming depnd on wild cereal availability or not? I think not . . .
+  if (doFarm? and farmEnergyRequired > 0 and fNAR > 0) [ ; are all these checks necessary or are some redundant? ;what's startfarm again?
+    let results calculateFarmEnergy farmEnergyRequired timeLeft farmAgent
+
+    set energyFarmed item 0 results
+    set timeFarmed item 1 results
+    ask farmAgent [
+     ;set pop pop - item 2 results ; not a thing here?
+           set nar calculateFarmNAR
+    ]
+     set energyLeft energyLeft - energyFarmed
+     set timeLeft timeLeft - timeFarmed
+  ]
+
+
+
+  if energyLeft > .1 [
+    let band-deaths ceiling (energyLeft / energyRequirement)
+    set band-deaths min list band-deaths individuals
+    set individuals individuals - band-deaths
+    set deaths deaths + band-deaths
+    if individuals <= 0 [ die ]
+
+  ]
+
+end
+
+
+to-report calc-search-time [ density ]
+  if density = 0 [ report staticZeroNar * -1 ] ; should change variable name and remove -1
+  report 1 / (searchSpeed * searchRadius * 2 * density)
+end
+
+to-report calculateNAR
+  let search-time calc-search-time (pop / sqKm)
+  report (energy - handling-time * catchCost - search-time * searchCost) / (handling-time + search-time)
+end
+
+
+to-report calculateFarmNAR
+  report cerealEnergy / cerealFarmTime - catchCost ; is this the same value for catchCost as others or should it be a different parameter?
+end
+
+
+
+to check-nan [value]
+  if not is-number? value [
+    print (word value " is NaN")
+  ]
+end
+
+
+to-report calcMaxFarm
+  ;show (word "calcMaxFarm habitat 2 cerealKilos is: " cerealGradient)
+   let maxF ((0.25 * (1000 - cerealGradient * maxCerealKilosPerHectare) + (cerealGradient * maxCerealKilosPerHectare)) * maxFarmHectares) ; is this correct?
+   set maxF (maxF ^ degradationFactor)
+   report maxF
+end
+
+to-report hasFreeLand
+  let indvs 0
+  if bands-here != nobody [set indvs sum [individuals] of bands-here]
+  ;show(word "individuals: " indvs)
+  let energyNeeded (indvs * energyRequirement);
+  let timeToFarm  (energyNeeded / NAR);
+	let cerealNeeded ((energyNeeded + timeToFarm * 6 * 60) / cerealEnergy);		
+  ;show(word "cerealNeeded: " cerealNeeded)
+  ;show(word "maxFarm - farmPop: " (maxFarm - farmPop))
+  report (maxFarm - farmPop) >= cerealNeeded
+end
+
+to-report canSustainMoreFarmers
+  let indvs sum [individuals] of bands-here
+  ;if bands-here != nobody [set indvs [individuals] of one-of bands-here]
+  let getIndDensity indvs / (sqKM / 20) ;;;; this shouldn't be hardcoded
+   ;show(word "indvs: " indvs)
+  ;show(word "curDensity: " getIndDensity)
+  ;show(word "maxFarmersDensity: " maxFarmersDensity)
+  if (getIndDensity > maxFarmersDensity) [
+    ;show count bands-here
+    ;show(word "indvs: " indvs)
+    ;show(word "curDensity: " getIndDensity)
+    ;show(word "maxFarmersDensity: " maxFarmersDensity)
+    ;let indvs mean [individuals] of bands-here
+    ;let curDensity (getIndDensity + indvs / sqKM)
+  ]
+	report  getIndDensity < maxFarmersDensity;
+end
+
+
 
 ; ==== generate all agents based on each habitat
 to create-agents
@@ -179,11 +615,11 @@ to create-agents
       set farmPop 0
       set cerealGradient 1.0
       set cerealKilos ((cerealGradient * (cerealMaxKilos - cerealMinKilos)) + cerealMinKilos);
-	    set extraCerealKilos (0.25 * (1000 - cerealKilos)) ; // *was 600, changed to 1000, as paper records*	
+	    set extraCerealKilos (0.25 * (1000 - cerealKilos)) ;  *was 600, changed to 1000, as paper records*	
       set cerealFarmTime ((1 / (hectaresPerHour * (cerealKilos + extraCerealKilos))) * 365 + cerealHarvestTime);
       set maxFarm calcMaxFarm
-      set farmNAR calculateFarmNar  ; function call
-      set maxFarmersDensity (((maxFarm * (cerealEnergy - cerealFarmTime * 6 * 60)) / (energyRequirement * 365)) / (sqKM * scale));
+      set NAR calculateFarmNar  ; function call
+      set maxFarmersDensity (((maxFarm * (cerealEnergy - cerealFarmTime * 6 * 60)) / (energyRequirement)) / (sqKM)); * scale));
       ;show (word "Farm habitat 1 maxFarm is: " maxFarm )
       ;show (word "Farm habitat 1 StaticNAR is: " staticNAR )
       ;show (word "Farm habitat 1 cerealFarmTime is: " cerealFarmTime)
@@ -195,8 +631,10 @@ to create-agents
       set habitat 1  ; lush
       set growth e ^ preyGrowthRate  ; 0.7
       set maxPop 8 * sqKM
-      set preyPop 8 * sqKM
-      set preyNar calculatePreyNAR
+      set pop 8 * sqKM
+      set energy preyEnergy
+      set handling-time preyCatchTime
+      set NAR calculateNAR
       ;show preyNar
       set xcor xcor - 0.2
     ]
@@ -207,8 +645,10 @@ to create-agents
       set habitat 1  ; lush
       set growth e ^ cerealGrowthRate ; 1
       set maxPop 600 * sqKM
-      set cerealPop 600 * sqKM
-      set cerealNar calculateCerealNAR
+      set pop 600 * sqKM
+      set energy cerealEnergy
+      set handling-time cerealHarvestTime
+      set NAR calculateNAR
       ;show cerealNar
       set xcor xcor + 0.2
     ]
@@ -229,11 +669,11 @@ to create-agents
       set farmPop 0
       set cerealGradient 0.67
       set cerealKilos ((cerealGradient * (cerealMaxKilos - cerealMinKilos)) + cerealMinKilos);
-      set extraCerealKilos (0.25 * (1000 - cerealKilos)) ; // *was 600, changed to 1000, as paper records*	
+      set extraCerealKilos (0.25 * (1000 - cerealKilos)) ;  *was 600, changed to 1000, as paper records*	
       set cerealFarmTime ((1 / (hectaresPerHour * (cerealKilos + extraCerealKilos))) * 365 + cerealHarvestTime);
       set maxFarm calcMaxFarm
-      set farmNAR calculateFarmNar  ; function call
-      set maxFarmersDensity (((maxFarm * (cerealEnergy - cerealFarmTime * 6 * 60)) / (energyRequirement * 365)) / (sqKM * scale));
+      set NAR calculateFarmNar  ; function call
+      set maxFarmersDensity (((maxFarm * (cerealEnergy - cerealFarmTime * 6 * 60)) / (energyRequirement)) / (sqKM)) ;* scale));
       ;show (word "Farm habitat 2 maxFarm is: " maxFarm )
       ;show (word "Farm habitat 2 StaticNAR is: " staticNAR )
       ;show (word "Farm habitat 2 cerealFarmTime is: " cerealFarmTime)
@@ -244,8 +684,10 @@ to create-agents
       set color 14; red
       set growth e ^ preyGrowthRate  ; 0.7
       set maxPop 5.4 * sqKM
-      set preyPop 5.4 * sqKM
-      set preyNar calculatePreyNAR
+      set pop 5.4 * sqKM
+      set energy preyEnergy
+      set handling-time preyCatchTime
+      set NAR calculateNAR
       ;show preyNar
       set xcor xcor - 0.2
     ]
@@ -254,9 +696,11 @@ to create-agents
       set shape "square4"
       set habitat 2  ; medium
       set growth e ^ cerealGrowthRate ; 1
-      set maxPop 402 * sqKM
-      set cerealPop 402 * sqKM
-      set cerealNar calculateCerealNAR
+      set maxPop 400 * sqKM ; 402, why not 400 as in paper?
+      set pop 400 * sqKM; 402, why not 400 as in paper?
+      set energy cerealEnergy
+      set handling-time cerealHarvestTime
+      set NAR calculateNAR
       ;show cerealNar
       set xcor xcor + 0.2
     ]
@@ -276,11 +720,11 @@ to create-agents
       set farmPop 0
       set cerealGradient 0.33
       set cerealKilos ((cerealGradient * (cerealMaxKilos - cerealMinKilos)) + cerealMinKilos);
-	    set extraCerealKilos (0.25 * (1000 - cerealKilos)) ; // *was 600, changed to 1000, as paper records*	
+	    set extraCerealKilos (0.25 * (1000 - cerealKilos)) ;  *was 600, changed to 1000, as paper records*	
       set cerealFarmTime ((1 / (hectaresPerHour * (cerealKilos + extraCerealKilos))) * 365 + cerealHarvestTime);
       set maxFarm calcMaxFarm
-      set farmNAR calculateFarmNar  ; function call
-      set maxFarmersDensity (((maxFarm * (cerealEnergy - cerealFarmTime * 6 * 60)) / (energyRequirement * 365)) / (sqKM * scale));
+      set NAR calculateFarmNar  ; function call
+      set maxFarmersDensity (((maxFarm * (cerealEnergy - cerealFarmTime * 6 * 60)) / (energyRequirement)) / (sqKM)); * scale));
       ;show (word "Farm habitat 3 maxFarm is: " maxFarm )
       ;show (word "Farm habitat 3 StaticNAR is: " staticNAR )
       ;show (word "Farm habitat 3 cerealFarmTime is: " cerealFarmTime)
@@ -291,8 +735,11 @@ to create-agents
       set habitat 3  ; desert
       set growth e ^ preyGrowthRate  ; 0.7
       set maxPop 2.6 * sqKM
-      set preyPop 2.6 * sqKM
-      set preyNar calculatePreyNAR  ; calling function
+      set pop 2.6 * sqKM
+      set energy preyEnergy
+      set energy preyEnergy
+      set handling-time preyCatchTime
+      set NAR calculateNAR
       ;show preyNar
       set xcor xcor - 0.2
     ]
@@ -302,9 +749,11 @@ to create-agents
       set habitat 3  ; desert
 
       set growth e ^ cerealGrowthRate ; 1
-      set maxPop 198 * sqKM
-      set cerealPop 198 * sqKM
-      set cerealNar calculateCerealNAR
+      set maxPop 200 * sqKM; originally 198, why not 200 as in paper?
+      set pop 200 * sqKM; originally 198, why not 200 as in paper?
+           set energy cerealEnergy
+      set handling-time cerealHarvestTime
+      set NAR calculateNAR
       ;show cerealNar
       set xcor xcor + 0.2
     ]
@@ -319,7 +768,7 @@ end
 
 to new-bands [habit]
   sprout-bands 1 [
-    set SIZE 0.65
+    set SIZE 0.4
     set color black
     set shape "circle"
     set habitat habit
@@ -330,218 +779,61 @@ to new-bands [habit]
   ]
 end
 
-
-
-;==== initialize the simulation
-to setup
-  clear-all
-  reset-timer
-  ask turtles [die]
-  clear-output
-  clear-all-plots
-  setup-plots
-  set-parameters
-  create-agents
-  if not doIHunt? [set flag true]
-  reset-ticks
-end
-
-
-to go
-  procreate
-  move
-  growCerealsPreysFarms
-  if (sum [farmPop] of farms) > 0 [
-   if (mean [farmPop] of farms / sqKM) >= 5500 [stop]
-  ]
-  tick
-end
-
-to move
-  ask bands [
-    decide
-    let indvs 0
-    ask bands-on farms-here [
-      set indvs indvs + individuals
-    ]
-    set label indvs
-
-    ask cereals-here  [
-      ifelse not showFarm [
-        if cerealPop > (maxPop * 9 / 10 )  [
-          set shape "square1_"
-        ] if habitat = 1 and cerealPop >= (maxPop * 8 / 10 ) and cerealPop < (maxPop * 9 / 10 ) [
-          set shape "square2"
-        ] if habitat = 1 and cerealPop >= (maxPop * 7 / 10 ) and cerealPop < (maxPop * 8 / 10 ) [
-          set shape "square3"
-        ] if habitat <= 2 and cerealPop >= (maxPop * 6 / 10 ) and cerealPop < (maxPop * 7 / 10) [
-          set shape "square4"
-        ] if habitat <= 2 and cerealPop >=(maxPop * 5 / 10 ) and cerealPop < (maxPop * 6 / 10 ) [
+to update-preys ; update prey visualization
+  if habitat = 1 [
+      if pop > (maxPop * 7 / 8 )  [
+          set shape "square1"
+      ] if pop >= (maxPop * 6 / 8 ) and pop < (maxPop * 7 / 8 ) [
+           set shape "square2"
+      ] if pop >= (maxPop * 5 / 8 ) and pop < (maxPop * 6 / 8 ) [
+           set shape "square3"
+      ] if pop >= (maxPop * 4 / 8 ) and pop < (maxPop * 5 / 8 ) [
+           set shape "square4"
+      ] if pop >=(maxPop * 3 / 8 ) and pop < (maxPop * 4 / 8 ) [
           set shape "square5"
-        ] if habitat <= 2 and cerealPop >= (maxPop * 4 / 10 ) and cerealPop < (maxPop * 5 / 10 ) [
+      ] if pop >= (maxPop * 2 / 8 ) and pop < (maxPop * 3 / 8 ) [
           set shape "square6"
-        ] if cerealPop >= (maxPop * 3 / 10) and cerealPop < (maxPop * 4 / 10 ) [
+      ] if pop >= (maxPop * 1.5 / 8 ) and pop < (maxPop * 2 / 8 ) [
           set shape "square7"
-        ]  if cerealPop >= (maxPop * 2 / 10) and cerealPop < (maxPop * 3 / 10 ) [
+      ] if pop >= (maxPop * 1 / 8 ) and pop < (maxPop * 1.5 / 8 ) [
           set shape "square8"
-        ] if cerealPop >= (maxPop * 1 / 10) and  cerealPop < (maxPop * 2 / 10 ) [
+      ] if pop >= (maxPop * 0.7 / 8 ) and pop < (maxPop * 1 / 8 ) [
           set shape "square9"
-        ] if cerealPop < 100 [
-          set shape "squareb"
-        ]
-     ]
-     [
-      set farmPop sum [farmPop] of farms-here
-        ;show farmPop
-      set maxFarm sum [maxFarm] of farms-here
-        ;show maxFarm
-      set color lime
-      if farmPop > (maxFarm * 9 / 10 )  [
-            set shape "farm1"
-      ] if farmPop >= (maxFarm * 8 / 10 ) and farmPop < (maxFarm * 9 / 10 ) [
-            set shape "farm2"
-      ] if farmPop >= (maxFarm * 7 / 10 ) and farmPop < (maxFarm * 8 / 10 ) [
-            set shape "farm3"
-      ] if farmPop >= (maxFarm * 6 / 10 ) and farmPop < (maxFarm * 7 / 10) [
-            set shape "farm4"
-      ] if farmPop >=(maxFarm * 5 / 10 ) and farmPop < (maxFarm * 6 / 10 ) [
-            set shape "farm5"
-      ] if farmPop >= (maxFarm * 4 / 10 ) and farmPop < (maxFarm * 5 / 10 ) [
-            set shape "farm6"
-      ] if farmPop >= (maxFarm * 3 / 10) and farmPop < (maxFarm * 4 / 10 ) [
-            set shape "farm7"
-      ]  if farmPop >= (maxFarm * 2 / 10) and farmPop < (maxFarm * 3 / 10 ) [
-            set shape "farm8"
-      ] if farmPop > (maxFarm * 1.5 / 10 ) and farmPop < (maxFarm * 2 / 10 ) [
-            set shape "farm9"
-      ] if farmPop >= (maxFarm * 1 / 10 ) and farmPop < (maxFarm * 1.5 / 10 ) [
-            set shape "farm10"
-      ] if farmPop < (maxFarm * 1 / 10 ) [
-            set shape "squareb"
-     ]
+      ] if pop < (maxPop * 0.7 / 8 ) [
+        set shape "squareb"
+      ]
     ]
-   ]
-
-    if doIHunt? [
-      ask preys-here  [
-        if habitat = 1 and preyPop > (maxPop * 7 / 8 )  [
-          set shape "square2"
-        ] if preyPop >= (maxPop * 6 / 8 ) and preyPop < (maxPop * 7 / 8 ) [
-          set shape "square3"
-        ] if preyPop >= (maxPop * 5 / 8 ) and preyPop < (maxPop * 6 / 8 ) [
-          set shape "square4"
-        ] if preyPop >= (maxPop * 4 / 8 ) and preyPop < (maxPop * 5 / 8 ) [
+    if habitat = 2 [
+      if pop > (maxPop * 4 / 5 ) [
+           set shape "square4"
+      ] if pop >= (maxPop * 3 / 5 ) and pop < (maxPop * 4 / 5 ) [
           set shape "square5"
-        ] if preyPop >=(maxPop * 3 / 8 ) and preyPop < (maxPop * 4 / 8 ) [
+      ] if pop >= (maxPop * 2 / 5 ) and pop < (maxPop * 3 / 5 ) [
           set shape "square6"
-        ] if preyPop >= (maxPop * 2 / 8 ) and preyPop < (maxPop * 3 / 8 ) [
+      ] if pop >= (maxPop * 1 / 5 ) and pop < (maxPop * 2 / 5 ) [
           set shape "square7"
-        ] if preyPop >= (maxPop * 1.5 / 8 ) and preyPop < (maxPop * 2 / 8 ) [
+      ] if pop >= (maxPop * 1.5 / 5 ) and pop < (maxPop * 2 / 5 ) [
           set shape "square8"
-        ] if preyPop >= (maxPop * 1 / 8 ) and preyPop < (maxPop * 1.5 / 8 ) [
+      ] if pop >= (maxPop * 1 / 5 ) and pop < (maxPop * 1.5 / 5 ) [
           set shape "square9"
-        ] if preyPop < (maxPop * 1 / 8 ) [
-          set shape "squareb"
-        ]
+      ] if pop < (maxPop * 1 / 5 )  [
+        set shape "squareb"
       ]
     ]
-    eatAndDie ; function call
-    let hab 0
-    ask farms-here [ set hab habitat]
-    ifelse hab != habitat [
-      set migratedCount migratedCount + 1
-      set habitat hab
-      set duration 1
-    ][set duration duration + 1]
-
- ]
+    if habitat = 3 [
+      if pop > (maxPop * 2 / 3 ) [
+           set shape "square7"
+      ] if pop >= (maxPop * 1 / 3 ) and pop < (maxPop * 2 / 3 ) [
+          set shape "square8"
+      ] if pop >= (maxPop * 0.5 / 3 ) and pop < (maxPop * 1 / 3 ) [
+          set shape "square9"
+      ] if pop < (maxPop * 0.5 / 3 ) [
+        set shape "squareb"
+      ]
+    ]
 end
-
-to decide
-  let bestCell one-of preys with [preyNAR > 0 and not any? other bands-here]
-  ;----- go to prey first
-  if doIHunt? [
-    set flag false
-    set bestCell one-of preys with [preyNAR > 0 and not any? other bands-here]
-    if cnt = 0 [ show "go for prey" set cnt 1]
-    ask preys [
-      set preyNAR calculatePreyNAR
-      if bestCell != nobody and preyNAR > (max list 0 [preyNar] of bestCell) [
-        set bestCell one-of preys-here
-      ]
-      if bestCell = nobody [
-        set flag true
-      ]
-    ]
-  ]
-
-  ;----- then go for cereals
-  if doIGather? and flag [
-    set bestCell one-of cereals with [cerealNAR > 0 and not any? other bands-here]
-    if cnt <= 1 [ show "go for cereals" set cnt 2]
-    ask cereals [
-      set cerealNAR calculateCerealNAR
-      if bestCell != nobody and cerealNAR > (max list 0 [cerealNAR] of bestCell) [
-        set bestCell one-of cereals-here
-      ]
-    ]
-
-  ]
-  ifelse bestCell != nobody [
-    move-to one-of farms-on bestCell
-    let cAvg averageCereal
-    if cAvg < 185 [
-       set startFarm true
-       ;show "startFarm"
-    ]
-  ]
-  [
-    ;---finally move to farm
-    if doFarm? and doIFarm and startFarm [
-      ;----go for farm
-      let cAvg averageCereal
-      ; FarmAverage 100 showing the farm
-      if cAvg < 50 [set showFarm true ];(show word "showFarm: " showFarm)]
-        set bestCell one-of farms-here
-        ask farms[
-          if farmNAR > [farmNAR] of bestCell and canSustainMoreFarmers [
-            set bestCell one-of farms-here
-            ;show (word "best cell in farms" bestCell)
-          ]
-        ]
-
-;        ask farms-here [
-;          if (not hasFreeLand) [
-;            ask farms[
-;              if canSustainMoreFarmers[
-;                set bestCell one-of farms-here
-;                ; show (word " not hasFreeLand bestcell is " bestCell)
-;              ]
-;            ]
-;          ]
-;        ]
-        move-to bestCell
-      ]
-  ]
-end
-
-to-report averageCereal
-  report mean [cerealPop] of cereals / sqKM ; sqrKm
-end
-
-to growCerealsPreysFarms
-   ;==== growing cereals OR Farm
-   ask cereals [
-     if (cerealPop < 0 and maxPop > 0) [
-        if random-float 1 < rePopChance[
-         	set cerealPop minKilosToSpread;
-        ]
-     ]
-     if (cerealPop != 0) [
-        set cerealPop (max list 0 (min list maxPop (cerealPop * (maxPop * growth) / (maxPop - (cerealPop * (1 - growth)))) ))
-        ;if cerealPop < cerealPop [show (word "growCerealsPreys cerealPop is: " cerealPop)]
-     ]
-     ifelse showFarm [
+to update-farms ; update visualization of farms
+       ifelse showFarm [
      ;=== growing farms
         set farmPop sum [farmPop] of farms-here
         ;show farmPop
@@ -603,450 +895,143 @@ to growCerealsPreysFarms
        ]
     ][
       if habitat = 1 [
-        if cerealPop > (maxPop * 9 / 10 )  [
+        if pop > (maxPop * 9 / 10 )  [
           set shape "square1"
-        ] if cerealPop >= (maxPop * 8 / 10 ) and cerealPop < (maxPop * 9 / 10 ) [
+        ] if pop >= (maxPop * 8 / 10 ) and pop < (maxPop * 9 / 10 ) [
           set shape "square1_"
-        ] if cerealPop >= (maxPop * 7 / 10 ) and cerealPop < (maxPop * 8 / 10 ) [
+        ] if pop >= (maxPop * 7 / 10 ) and pop < (maxPop * 8 / 10 ) [
           set shape "square2"
-        ] if cerealPop >= (maxPop * 6 / 10 ) and cerealPop < (maxPop * 7 / 10) [
+        ] if pop >= (maxPop * 6 / 10 ) and pop < (maxPop * 7 / 10) [
           set shape "square3"
-        ] if cerealPop >=(maxPop * 5 / 10 ) and cerealPop < (maxPop * 6 / 10 ) [
+        ] if pop >=(maxPop * 5 / 10 ) and pop < (maxPop * 6 / 10 ) [
           set shape "square4"
-        ] if cerealPop >= (maxPop * 4 / 10 ) and cerealPop < (maxPop * 5 / 10 ) [
+        ] if pop >= (maxPop * 4 / 10 ) and pop < (maxPop * 5 / 10 ) [
           set shape "square5"
-        ] if cerealPop >= (maxPop * 3 / 10) and cerealPop < (maxPop * 4 / 10 ) [
+        ] if pop >= (maxPop * 3 / 10) and pop < (maxPop * 4 / 10 ) [
           set shape "square6"
-        ]  if cerealPop >= (maxPop * 2 / 10) and cerealPop < (maxPop * 3 / 10 ) [
+        ]  if pop >= (maxPop * 2 / 10) and pop < (maxPop * 3 / 10 ) [
           set shape "square7"
-        ] if cerealPop > (maxPop * 1 / 10 ) and cerealPop < (maxPop * 2 / 10 ) [
+        ] if pop > (maxPop * 1 / 10 ) and pop < (maxPop * 2 / 10 ) [
           set shape "square8"
-        ] if cerealPop >= (maxPop * 0.5 / 10 ) and cerealPop < (maxPop * 1 / 10 ) [
+        ] if pop >= (maxPop * 0.5 / 10 ) and pop < (maxPop * 1 / 10 ) [
           set shape "square9"
-        ] if cerealPop < (maxPop * 0.5 / 3 ) [
+        ] if pop < (maxPop * 0.5 / 3 ) [
           set shape "squareb"
         ]
       ]
       if habitat = 2 [
-        if cerealPop > (maxPop * 4 / 5 ) [
+        if pop > (maxPop * 4 / 5 ) [
           set shape "square4"
-        ] if cerealPop >= (maxPop * 3 / 5 ) and cerealPop < (maxPop * 4 / 5 ) [
+        ] if pop >= (maxPop * 3 / 5 ) and pop < (maxPop * 4 / 5 ) [
           set shape "square5"
-        ] if cerealPop >= (maxPop * 2 / 5 ) and cerealPop < (maxPop * 3 / 5 ) [
+        ] if pop >= (maxPop * 2 / 5 ) and pop < (maxPop * 3 / 5 ) [
           set shape "square6"
-        ] if cerealPop >= (maxPop * 1.5 / 5 ) and cerealPop < (maxPop * 2 / 5 ) [
+        ] if pop >= (maxPop * 1.5 / 5 ) and pop < (maxPop * 2 / 5 ) [
           set shape "square7"
-        ] if cerealPop >= (maxPop * 1 / 5 ) and cerealPop < (maxPop * 1.5 / 5 ) [
+        ] if pop >= (maxPop * 1 / 5 ) and pop < (maxPop * 1.5 / 5 ) [
           set shape "square8"
-        ] if cerealPop >= (maxPop * 0.5 / 5 ) and cerealPop < (maxPop * 1 / 5 ) [
+        ] if pop >= (maxPop * 0.5 / 5 ) and pop < (maxPop * 1 / 5 ) [
           set shape "square9"
-        ] if cerealPop < (maxPop * 0.5 / 5 ) [
+        ] if pop < (maxPop * 0.5 / 5 ) [
           set shape "squareb"
         ]
       ]
       if habitat = 3 [
-        if cerealPop > (maxPop * 2 / 3 ) [
+        if pop > (maxPop * 2 / 3 ) [
           set shape "square7"
-        ] if cerealPop >= (maxPop * 1 / 3 ) and cerealPop < (maxPop * 2 / 5 ) [
+        ] if pop >= (maxPop * 1 / 3 ) and pop < (maxPop * 2 / 5 ) [
           set shape "square8"
-        ] if cerealPop >= (maxPop * 0.5 / 3 ) and cerealPop < (maxPop * 1 / 3 ) [
+        ] if pop >= (maxPop * 0.5 / 3 ) and pop < (maxPop * 1 / 3 ) [
           set shape "square9"
-        ] if cerealPop < (maxPop * 0.5 / 3 ) [
+        ] if pop < (maxPop * 0.5 / 3 ) [
           set shape "squareb"
         ]
       ]
     ]
-  ]
-  ;________________________________________________________________
-  ; growing preys
-  ask preys with [doIHunt?] [
-    if (preyPop <= 0 and maxPop > 0) [
-       if random-float 1 < rePopChance[
-      		set preyPop minNumToMigrate ; 100
-      ]			
-  	]
-    if (preyPop != 0) [
-			set preyPop (max list 0 (min list maxPop (preyPop * (maxPop * growth) / (maxPop - (preyPop * (1 - growth)))) ))
-      ;if preyPop < maxPop [show (word "growCerealsPreys preyPop is: " preyPop)]
-  	]
-    if habitat = 1 [
-      if preyPop > (maxPop * 7 / 8 )  [
-          set shape "square1"
-      ] if preyPop >= (maxPop * 6 / 8 ) and preyPop < (maxPop * 7 / 8 ) [
-           set shape "square2"
-      ] if preyPop >= (maxPop * 5 / 8 ) and preyPop < (maxPop * 6 / 8 ) [
-           set shape "square3"
-      ] if preyPop >= (maxPop * 4 / 8 ) and preyPop < (maxPop * 5 / 8 ) [
-           set shape "square4"
-      ] if preyPop >=(maxPop * 3 / 8 ) and preyPop < (maxPop * 4 / 8 ) [
-          set shape "square5"
-      ] if preyPop >= (maxPop * 2 / 8 ) and preyPop < (maxPop * 3 / 8 ) [
-          set shape "square6"
-      ] if preyPop >= (maxPop * 1.5 / 8 ) and preyPop < (maxPop * 2 / 8 ) [
-          set shape "square7"
-      ] if preyPop >= (maxPop * 1 / 8 ) and preyPop < (maxPop * 1.5 / 8 ) [
-          set shape "square8"
-      ] if preyPop >= (maxPop * 0.7 / 8 ) and preyPop < (maxPop * 1 / 8 ) [
-          set shape "square9"
-      ] if preyPop < (maxPop * 0.7 / 8 ) [
-        set shape "squareb"
-      ]
-    ]
-    if habitat = 2 [
-      if preyPop > (maxPop * 4 / 5 ) [
-           set shape "square4"
-      ] if preyPop >= (maxPop * 3 / 5 ) and preyPop < (maxPop * 4 / 5 ) [
-          set shape "square5"
-      ] if preyPop >= (maxPop * 2 / 5 ) and preyPop < (maxPop * 3 / 5 ) [
-          set shape "square6"
-      ] if preyPop >= (maxPop * 1 / 5 ) and preyPop < (maxPop * 2 / 5 ) [
-          set shape "square7"
-      ] if preyPop >= (maxPop * 1.5 / 5 ) and preyPop < (maxPop * 2 / 5 ) [
-          set shape "square8"
-      ] if preyPop >= (maxPop * 1 / 5 ) and preyPop < (maxPop * 1.5 / 5 ) [
-          set shape "square9"
-      ] if preyPop < (maxPop * 1 / 5 )  [
-        set shape "squareb"
-      ]
-    ]
-    if habitat = 3 [
-      if preyPop > (maxPop * 2 / 3 ) [
-           set shape "square7"
-      ] if preyPop >= (maxPop * 1 / 3 ) and preyPop < (maxPop * 2 / 3 ) [
-          set shape "square8"
-      ] if preyPop >= (maxPop * 0.5 / 3 ) and preyPop < (maxPop * 1 / 3 ) [
-          set shape "square9"
-      ] if preyPop < (maxPop * 0.5 / 3 ) [
-        set shape "squareb"
-      ]
-    ]
-  ]
 end
 
-to-report random-binomial [n p]
-  report sum n-values n [ifelse-value (p > random-float 1) [1] [0]]
-end
+to move-update
 
-to procreate
-  ask bands [
-    ; birth chance
-    set births random-binomial individuals 0.02 ; binomial draws for birth counts
-    if (individuals > 0) [
-        set individuals individuals + births
-        if individuals > (individualsAtStart * 2) [ ; and count bands < (1120 + random 100)
-          set individuals individuals - individualsAtStart
-          let hab habitat
-          ; adding a new band
-          hatch-bands 1 [
-            set SIZE 0.65
-            set color black
-            set shape "circle"
-            set habitat hab
-            set births 0
-            set individuals individualsAtStart
-
-            set label individuals
-            set label-color green
-            ;if showFarm [ set individualsAtStart (individualsAtStart + 20) show individualsAtStart ]
-            ifelse doIHunt?  [
-              move-to max-one-of preys with [habitat = hab][preyNAR]
-            ][
-              ifelse not showFarm [
-                move-to max-one-of cereals with [habitat = hab][cerealNAR]
-              ][ move-to max-one-of farms with [habitat = hab][farmNAR] ]
-            ]
-          ]
+    ask cereals-here  [
+      ifelse not showFarm [
+        if pop > (maxPop * 9 / 10 )  [
+          set shape "square1_"
+        ] if habitat = 1 and pop >= (maxPop * 8 / 10 ) and pop < (maxPop * 9 / 10 ) [
+          set shape "square2"
+        ] if habitat = 1 and pop >= (maxPop * 7 / 10 ) and pop < (maxPop * 8 / 10 ) [
+          set shape "square3"
+        ] if habitat <= 2 and pop >= (maxPop * 6 / 10 ) and pop < (maxPop * 7 / 10) [
+          set shape "square4"
+        ] if habitat <= 2 and pop >=(maxPop * 5 / 10 ) and pop < (maxPop * 6 / 10 ) [
+          set shape "square5"
+        ] if habitat <= 2 and pop >= (maxPop * 4 / 10 ) and pop < (maxPop * 5 / 10 ) [
+          set shape "square6"
+        ] if pop >= (maxPop * 3 / 10) and pop < (maxPop * 4 / 10 ) [
+          set shape "square7"
+        ]  if pop >= (maxPop * 2 / 10) and pop < (maxPop * 3 / 10 ) [
+          set shape "square8"
+        ] if pop >= (maxPop * 1 / 10) and  pop < (maxPop * 2 / 10 ) [
+          set shape "square9"
+        ] if pop < 100 [
+          set shape "squareb"
         ]
+     ]
+     [
+      set farmPop sum [farmPop] of farms-here
+        ;show farmPop
+      set maxFarm sum [maxFarm] of farms-here
+        ;show maxFarm
+      set color lime
+      if farmPop > (maxFarm * 9 / 10 )  [
+            set shape "farm1"
+      ] if farmPop >= (maxFarm * 8 / 10 ) and farmPop < (maxFarm * 9 / 10 ) [
+            set shape "farm2"
+      ] if farmPop >= (maxFarm * 7 / 10 ) and farmPop < (maxFarm * 8 / 10 ) [
+            set shape "farm3"
+      ] if farmPop >= (maxFarm * 6 / 10 ) and farmPop < (maxFarm * 7 / 10) [
+            set shape "farm4"
+      ] if farmPop >=(maxFarm * 5 / 10 ) and farmPop < (maxFarm * 6 / 10 ) [
+            set shape "farm5"
+      ] if farmPop >= (maxFarm * 4 / 10 ) and farmPop < (maxFarm * 5 / 10 ) [
+            set shape "farm6"
+      ] if farmPop >= (maxFarm * 3 / 10) and farmPop < (maxFarm * 4 / 10 ) [
+            set shape "farm7"
+      ]  if farmPop >= (maxFarm * 2 / 10) and farmPop < (maxFarm * 3 / 10 ) [
+            set shape "farm8"
+      ] if farmPop > (maxFarm * 1.5 / 10 ) and farmPop < (maxFarm * 2 / 10 ) [
+            set shape "farm9"
+      ] if farmPop >= (maxFarm * 1 / 10 ) and farmPop < (maxFarm * 1.5 / 10 ) [
+            set shape "farm10"
+      ] if farmPop < (maxFarm * 1 / 10 ) [
+            set shape "squareb"
+     ]
     ]
-  ]
-end
-
-to eatAndDie
-		set timeHunted 0
-    set timeGathered 0
-    set timeFarmed 0
-    let pNAR one-of [preyNAR] of preys-here
-    ;show "pNAR:" show pNAR
-    let cNAR one-of [cerealNAR] of cereals-here
-  	let fNAR one-of [farmNAR] of farms-here
-    ;show (word "eatAndDie farmNar is: " fNAR)
-    ;show (word "eatAndDie cNAR is: " cNAR)
-  	if doFarm? [set doIFarm  (round cNar) < (round fNar)]
-    if doIFarm and cnt = 2 [
-       show "eatAndDie doIFarm yes"
-       set cnt 3
-       show (word "eatAndDie farmNar is: " fNAR)
-       show (word "eatAndDie cNAR is: " cNAR)		
-    ]
-		let energyRqrd (365 * individuals * energyRequirement);
-    ;show (word "eatAndDie Energy Required 1 is: " energyRqrd)
-		set timeLeft (365 * individuals * maxForageTime);
-    ;show (word "eatAndDie timeLeft 1 is: " timeLeft)
-  	let results [0 0] ;
-		let preyEnergyRequired 0;
-		ifelse (pNar <= 0 and cNar <= 0) [ ; if there is nothing to gain from either hunting or gathering
-			set preyEnergyRequired  0;
-    ][
-       if not doIFarm [set fNar 0]
-       let otherNAR list cNAR fNAR
-    	 set preyEnergyRequired (energyRequired energyRqrd pNar otherNAR) ;energyRequired function call
-    ]
-
-		; ===== go hunt
-		set energyHunted 0;
-		if (doIHunt? and preyEnergyRequired > 0 and pNAR > 0) [
-      let t timeLeft
-      ask preys-here [
-        set tLeft t
-        ;show (word "eatAndDie timeLeft2 for prey is: " tLeft)
-      	set results (calculatePreyEnergy preyEnergyRequired tLeft);
-      ]
-			set energyHunted item 0 results;
-			set energyRqrd energyRqrd - energyHunted;
-      ;show (word "eatAndDie Energy Required for prey is: " energyRqrd)
-      set timeHunted (item 1 results)
-			set timeLeft timeLeft - timeHunted;
-    ]
-
-		; then, decide how much energy to gain from cereal by gathering
-		let cerealEnergyRequired 0;
-		ifelse (doIFarm) [
-    	 let nars list 0 fNar
-       ;show (word "eatAndDie fNAR is: " fNar)
-       set cerealEnergyRequired (energyRequired energyRqrd cNar nars);
-       ;show (word "eatAndDie Energy Required for cereal is: " energyRqrd)
-  	][
-			 set cerealEnergyRequired energyRqrd;
-    ]
-		set energyGathered 0;
-		if (cerealEnergyRequired > 0 and cNAR > 0) [
-      let t timeLeft
-      ask cereals-here [
-         set tLeft t
-      	 set results (calculateCerealEnergy cerealEnergyRequired tLeft)
-      ]
-			set energyGathered item 0 results;
-      set energyRqrd energyRqrd - energyGathered;
-      ;show (word "eatAndDie Energy Required for cereal is: " energyRqrd)
-      set timeGathered (item 1 results)
-      set timeLeft timeLeft - timeGathered
-		]
-
-  	; =========farm the rest 		
-		if (doFarm? and doIFarm and startFarm) [
-      set energyFarmed 0;
-      let t timeLeft
-      ask farms-here [
-         set tLeft t
-         set results (calculateFarmEnergy energyRqrd tLeft)
-      ]
-      set energyFarmed (item 0 results);
-      set energyRqrd energyRqrd - energyFarmed
-      ;
-      ;show (word "eatAndDie Energy Required for farm is: " energyRqrd)
-      ;shoif energyRqrd > 1 [show (word "eatAndDie Energy Required for farm is: " energyRqrd)]
-      set timeFarmed (item 1 results)
-      set timeLeft timeLeft - timeFarmed
-      ;show (word "eatAndDie timeLeft for farm is: " timeLeft)
-  	]
-		set deaths 0;
-    ;show (word "eatAndDie energyRqrd is: " energyRqrd)
-		if (energyRqrd > 1) [ ;// relatively small non-zero comparison to compensate for minute rounding errors
-			set deaths (round (energyRqrd / (365 * energyRequirement))) + 1;  //integer casting
-      show (word "eatAndDie deaths is: " deaths)
-      if energyFarmed = 0 [
-        show (word "eatAndDie energyFarmed is: " energyFarmed)
-      ]
-      ;show (word "eatAndDie energyReqrd is: " energyRqrd)
-			if (deaths > individuals) [
-				set deaths individuals;
-    	]
-			set individuals individuals - deaths;
-			if (individuals <= 0) [
-				set individuals 0;
-        show "dead band is removed!"
-        removeDeadBands
-    	]
    ]
-end
 
-to-report energyRequired [totalEnergy prNAR otherNAR]
-		let otherTotal  0;
-		set prNAR (max list 0 prNAR)
-    foreach otherNAR [ x -> (set otherTotal otherTotal + (max list 0 x)) ]
-    ;if prNAR <= 0 [show prNAR]
-		report (totalEnergy * prNAR / (prNAR + otherTotal))
-end
-
-to-report calculatePreyNAR
-    if preyPop = 0 [
-			report staticZeroNar;
+  if doIHunt? [
+      ask preys-here  [
+        if habitat = 1 and pop > (maxPop * 7 / 8 )  [
+          set shape "square2"
+        ] if pop >= (maxPop * 6 / 8 ) and pop < (maxPop * 7 / 8 ) [
+          set shape "square3"
+        ] if pop >= (maxPop * 5 / 8 ) and pop < (maxPop * 6 / 8 ) [
+          set shape "square4"
+        ] if pop >= (maxPop * 4 / 8 ) and pop < (maxPop * 5 / 8 ) [
+          set shape "square5"
+        ] if pop >=(maxPop * 3 / 8 ) and pop < (maxPop * 4 / 8 ) [
+          set shape "square6"
+        ] if pop >= (maxPop * 2 / 8 ) and pop < (maxPop * 3 / 8 ) [
+          set shape "square7"
+        ] if pop >= (maxPop * 1.5 / 8 ) and pop < (maxPop * 2 / 8 ) [
+          set shape "square8"
+        ] if pop >= (maxPop * 1 / 8 ) and pop < (maxPop * 1.5 / 8 ) [
+          set shape "square9"
+        ] if pop < (maxPop * 1 / 8 ) [
+          set shape "squareb"
+        ]
+      ]
     ]
-    set preyDensity (preyPop / sqKM);
-    set preySearchTime  (1 / (searchSpeed * searchRadius * 2 * preyDensity));
-    set preyHuntTime (preySearchTime + preyCatchTime)
-    set staticZeroNar -1000000;
-	  report (preyEnergy / preyHuntTime) - ((preyCatchTime / preyHuntTime) * catchCost) - ((preySearchTime / preyHuntTime) * searchCost)
 
-end
-
-
-to-report calculateCerealNAR
-    if cerealPop = 0 [
-			report staticZeroNar;
-  	]
-    set cerealSearchTime  (1 / (searchSpeed * searchRadius * 2 * ((cerealPop) / sqKM)))
-    set cerealGatherTime (cerealSearchTime + cerealHarvestTime);
-		
-		set staticZeroNar -1000000;
-		report (cerealEnergy / cerealGatherTime) - ((cerealHarvestTime / cerealGatherTime) * catchCost) - ((cerealSearchTime / cerealGatherTime) * searchCost);
-end
-
-to-report calculateFarmNAR
-  let staticNAR (cerealEnergy / cerealFarmTime - catchCost)
-  ;show (word "calculateFarmNAR staticNAR is: " staticNAR)
-  report staticNAR
-end
-
-to-report calculatePreyEnergy[energyNeeded timeAvailable]
-		let output [0 0]
-    let NAR calculatePreyNAR
-    set preyNar NAR
-    ;show (word "preyNAR is: " preyNar)
-    if (preyPop = 0) [report output]
-		let preyCatchable (min list preyPop (timeAvailable / preyHuntTime));	
-    ;show (word "calculatePreyEnergy preyCatchable is: " preyCatchable)
-		let preyNeeded ((energyNeeded / NAR) / preyHuntTime)
-    ;show (word "calculatePreyEnergy preyNeeded is: " preyNeeded)
-		let preyCaught (max list 0 (min list preyCatchable preyNeeded))
-    ;show (word "calculatePreyEnergy preyCaught is: " preyCaught)
-		if (timeAvailable < (energyNeeded / NAR) and (preyNeeded < preyCaught)) [
-			report output
-  	]
-		set output replace-item 0 output (NAR * preyHuntTime * preyCaught)
-		set output replace-item 1 output (preyCaught * preyHuntTime)
-		set preyPop (max list 0 (preyPop - preyCaught)); new prey population
-    ;show (word "calculatePreyEnergy output1 is: " (NAR * preyHuntTime * preyCaught))
-    ;show (word "calculatePreyEnergy output is: " output)
-    ;show (word "calculatePreyEnergy new preyPop is: " preyPop)
-		report output
-end
-
-to-report calculateCerealEnergy [energyNeeded timeAvailable]
-  	let output [0 0]
-    let NAR calculateCerealNAR
-    set cerealNar NAR
-    if (cerealPop = 0) [report output]
-  	let cerealGatherable (min list cerealPop (timeAvailable / cerealGatherTime))
-    ;show (word "calculateCerealEnergy cerealGatherable is: " cerealGatherable)
-		let cerealNeeded (energyNeeded / NAR) / cerealGatherTime
-		let cerealGathered (max list 0 (min list cerealGatherable cerealNeeded))
-		if (timeAvailable < (energyNeeded / NAR) and (cerealGathered < cerealNeeded)) [
-    	set output [0 0]
-			report output;
-  	]
-		set output replace-item 0 output (NAR * cerealGatherTime * cerealGathered)
-		set output replace-item 1 output (cerealGathered * cerealGatherTime)
-		set cerealPop (max list 0 (cerealPop - cerealGathered))
-    ;show (word "calculateCerealEnergy output1 is: " (NAR * cerealGatherTime * cerealGathered))
-    ;show (word "calculateCerealEnergy output is: " output)
-    ;show (word "calculateCerealEnergy new cerealPop is: " cerealPop)
-		report output
-end
-
-to-report calculateFarmEnergy [energyNeeded timeAvailable]
-		let output [0 0]
-		;show (word " SourceFarm calculateEnergy!");
-		;check-nan farmPop
-    ;check-nan timeAvailable
-    ;check-nan energyNeeded
-		
-;    let cerealFarmable (min list (max list 0 (maxFarm - farmPop)) (timeAvailable / cerealFarmTime));
-;    show(word "max list 0 (maxFarm - farmPop) is " max list 0 (maxFarm - farmPop))
-;    show(word "cerealFarmable is: " cerealFarmable)
-;    show(word "t/c is: " (timeAvailable / cerealFarmTime))
-    let cerealFarmable (timeAvailable / cerealFarmTime)
-  	;check-nan cerealFarmable
-		
-    let timeToFarm (energyNeeded / farmNAR)
-		let cerealNeeded ((energyNeeded + timeToFarm * 6 * 60) / cerealEnergy);
-		check-nan cerealNeeded
-		
-  let cerealFarmed (min list cerealFarmable cerealNeeded);
-	set cerealFarmed (max list 0 cerealFarmed);
-	check-nan cerealFarmed
-
-  if (timeAvailable < (energyNeeded / farmNAR) and cerealFarmed < cerealNeeded) [
-    	set output [0 0]
-      show "output 0"
-			report output;
-  ]
-  let totduration 0
-  ask bands-here [ set totduration totduration + duration]
-  ifelse totduration = 0
-   [set technology 1 / (1 + learningfactor)]
-   [set technology (totduration / (totduration + learningfactor))]
-
-  set output replace-item 0 output ((cerealFarmed * cerealEnergy) - (cerealFarmed * cerealFarmTime * 6 * 60));
-	set output replace-item 1 output (cerealFarmed * cerealFarmTime);
-  ;show technology
-  set farmPop (min list maxFarm (farmPop * technology + cerealFarmed ))
-
-  if (cerealFarmed * cerealFarmTime) = 0 [show(word "farm population: " farmPop)]
-		check-nan farmPop
-    ;show(word "calculateFarmEnergy cerealFarmTime: " cerealFarmTime)
-    ;show(word "calculateFarmEnergy cerealFarmed: " cerealFarmed)
-	  ;show(word "farm output: " output)
-    report output
-
-end
-
-to check-nan [value]
-  if not is-number? value [
-    print (word value " is NaN")
-  ]
-end
-
-
-to-report calcMaxFarm
-  ;show (word "calcMaxFarm habitat 2 cerealKilos is: " cerealGradient)
-   let maxF ((0.25 * (1000 - cerealGradient * maxCerealKilosPerHectare) + (cerealGradient * maxCerealKilosPerHectare)) * maxFarmHectares)
-   set maxF (maxF ^ degradationFactor)
-   report maxF
-end
-
-to-report hasFreeLand
-  let indvs 0
-  if bands-here != nobody [set indvs sum [individuals] of bands-here]
-  ;show(word "individuals: " indvs)
-  let energyNeeded (indvs * 365 * energyRequirement);
-  let timeToFarm  (energyNeeded / farmNAR);
-	let cerealNeeded ((energyNeeded + timeToFarm * 6 * 60) / cerealEnergy);		
-  ;show(word "cerealNeeded: " cerealNeeded)
-  ;show(word "maxFarm - farmPop: " (maxFarm - farmPop))
-  report (maxFarm - farmPop) >= cerealNeeded
-end
-
-to-report canSustainMoreFarmers
-  let indvs sum [individuals] of bands-here
-  ;if bands-here != nobody [set indvs [individuals] of one-of bands-here]
-  let getIndDensity indvs / (sqKM / 20)
-   ;show(word "indvs: " indvs)
-  ;show(word "curDensity: " getIndDensity)
-  ;show(word "maxFarmersDensity: " maxFarmersDensity)
-  if (getIndDensity > maxFarmersDensity) [
-    ;show count bands-here
-    ;show(word "indvs: " indvs)
-    ;show(word "curDensity: " getIndDensity)
-    ;show(word "maxFarmersDensity: " maxFarmersDensity)
-    ;let indvs mean [individuals] of bands-here
-    ;let curDensity (getIndDensity + indvs / sqKM)
-  ]
-	report  getIndDensity < maxFarmersDensity;
-end
-
-to removeDeadBands
-  if individuals <= 0 [die]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -1077,10 +1062,10 @@ Turns
 1.0
 
 BUTTON
-0
-10
-61
-46
+12
+55
+73
+91
 go
 go
 T
@@ -1094,11 +1079,11 @@ NIL
 1
 
 BUTTON
-41
-51
-137
-84
-setup/reset
+13
+14
+79
+47
+setup
 setup
 NIL
 1
@@ -1115,7 +1100,7 @@ PLOT
 54
 1316
 198
-Agricultural Plots
+Population Dynamics
 Time(year)
 Counts
 0.0
@@ -1127,7 +1112,6 @@ true
 "" ""
 PENS
 "Individual Total" 1.0 0 -13840069 true "" "plot sum [individuals] of bands / 100"
-"Births Total" 1.0 0 -955883 true "" "plot sum [births] of bands / 100"
 "Total Bands" 1.0 0 -13345367 true "" "plot count bands"
 
 MONITOR
@@ -1157,9 +1141,9 @@ true
 true
 "" ""
 PENS
-"Lush Prey Pop" 1.0 0 -2674135 true "" "plot (mean [preyPop] of preys with [habitat = 1]) / sqKM"
-"Medium Prey Pop" 1.0 0 -4699768 true "" "plot (mean [preyPop] of preys with [habitat = 2]) / sqKM"
-"Desert Prey Pop" 1.0 0 -1184463 true "" "plot (mean [preyPop] of preys with [habitat = 3]) / sqKM"
+"Lush Prey Pop" 1.0 0 -2674135 true "" "plot (mean [pop] of preys with [habitat = 1]) / sqKM"
+"Medium Prey Pop" 1.0 0 -4699768 true "" "plot (mean [pop] of preys with [habitat = 2]) / sqKM"
+"Desert Prey Pop" 1.0 0 -1184463 true "" "plot (mean [pop] of preys with [habitat = 3]) / sqKM"
 
 MONITOR
 815
@@ -1169,28 +1153,6 @@ MONITOR
 Total Individuals
 sum [individuals] of bands
 2
-1
-11
-
-MONITOR
-905
-10
-971
-55
-Total Births
-sum [births] of bands
-1
-1
-11
-
-MONITOR
-971
-10
-1054
-55
-Total Deaths
-sum [deaths] of bands\n;count farms
-1
 1
 11
 
@@ -1221,9 +1183,9 @@ true
 true
 "" ""
 PENS
-"Cereal Pop. in Lush" 1.0 0 -13840069 true "" "plot mean [cerealPop] of cereals with [habitat = 1] / 300"
-"Cereal Pop. in Medium" 1.0 0 -10899396 true "" "plot mean [cerealPop] of cereals with [habitat = 2] / 300"
-"Cereal Pop. in Desert" 1.0 0 -4079321 true "" "plot mean [cerealPop] of cereals with [habitat = 3] / 300"
+"Cereal Pop. in Lush" 1.0 0 -13840069 true "" "plot mean [pop] of cereals with [habitat = 1] / 300"
+"Cereal Pop. in Medium" 1.0 0 -10899396 true "" "plot mean [pop] of cereals with [habitat = 2] / 300"
+"Cereal Pop. in Desert" 1.0 0 -4079321 true "" "plot mean [pop] of cereals with [habitat = 3] / 300"
 "Farm Pop in Lush" 1.0 0 -11221820 true "" "plot mean [farmPop] of farms with [habitat = 1] / 300"
 "Farm Pop. in Medium" 1.0 0 -13791810 true "" "plot mean [farmPop] of farms with [habitat = 2] / 300"
 "Farm Pop in Desert" 1.0 0 -2064490 true "" "plot mean [farmPop] of farms with [habitat = 3] / 300"
@@ -1245,7 +1207,7 @@ MONITOR
 1240
 55
 Avg.Prey Pop.
-mean [preyPop] of preys / 300
+mean [pop] of preys / 300
 1
 1
 11
@@ -1296,8 +1258,7 @@ true
 true
 "" ""
 PENS
-"Death Total" 1.0 0 -16777216 true "" "plot sum [deaths] of bands"
-"Death Per Habitat" 1.0 0 -7500403 true "" "plot sum [deaths] of bands / 3"
+"Death Total" 1.0 0 -16777216 true "" "plot deaths"
 "Avg.Prey timeLeftx1K" 1.0 0 -5825686 true "" "plot mean [tLeft] of preys / 1000"
 "Avg.Cereal timeLeftx1K" 1.0 0 -13840069 true "" "plot mean [tLeft] of cereals / 1000"
 "Avg.Farm timeLeftx1K" 1.0 0 -2674135 true "" "plot mean [tLeft] of farms / 1000"
@@ -1339,24 +1300,13 @@ doIHunt?
 1
 -1000
 
-SWITCH
-19
-314
-132
-347
-doIGather?
-doIGather?
-0
-1
--1000
-
 BUTTON
 13
 390
 127
 423
 EXPERIMENT-1
-set doIHunt? false\nset doIGather? true\nset doFarm? false
+set doIHunt? false\nset doFarm? false
 NIL
 1
 T
@@ -1373,7 +1323,7 @@ BUTTON
 123
 499
 EXPERIMENT-2
-set doIHunt? true\nset doIGather? true\nset doFarm? false
+set doIHunt? true\nset doFarm? false
 NIL
 1
 T
@@ -1407,7 +1357,7 @@ Experiment-2\nBands hunt and gather
 TEXTBOX
 11
 511
-179
+197
 559
 Experiment-3\nBands hunt, gather and farm
 13
@@ -1420,7 +1370,7 @@ BUTTON
 123
 577
 EXPERIMENT-3
-set doIHunt? true\nset doIGather? true\nset doFarm? true
+set doIHunt? true\nset doFarm? true
 NIL
 1
 T
@@ -1460,12 +1410,14 @@ Hours
 0.0
 10.0
 0.0
-10.0
+2.0
 true
 false
 "" ""
 PENS
-"Hours" 1.0 0 -2674135 true "" "plot mean [timehunted] of bands / 365 / 14 "
+"Hours" 1.0 0 -13840069 true "" "plot mean [timehunted] of bands with [habitat = 1] / 365 / 14 "
+"pen-1" 1.0 0 -13345367 true "" "plot mean [timehunted] of bands with [habitat = 2] / 365 / 14 "
+"pen-2" 1.0 0 -2674135 true "" "plot mean [timehunted] of bands with [habitat = 3] / 365 / 14 "
 
 PLOT
 1317
@@ -1478,7 +1430,7 @@ Hours
 0.0
 10.0
 0.0
-10.0
+2.0
 true
 false
 "" ""
@@ -1503,9 +1455,9 @@ SLIDER
 196
 learningFactor
 learningFactor
-0.1
+0
 2
-2.0
+0.0
 0.01
 1
 NIL
@@ -1520,17 +1472,17 @@ degradationFactor
 degradationFactor
 0.1
 2
-2.0
+1.0
 0.01
 1
 NIL
 HORIZONTAL
 
 BUTTON
-74
-12
-137
-45
+89
+14
+152
+47
 step
 go
 NIL
@@ -1562,6 +1514,46 @@ PENS
 "Lush" 1.0 0 -13840069 true "" "plot sum [individuals] of bands with [habitat = 1] / (count patches / 3 * sqKM)"
 "Medium" 1.0 0 -13345367 true "" "plot sum [individuals] of bands with [habitat = 2] / (count patches / 3 * sqKM)"
 "Desert" 1.0 0 -2674135 true "" "plot sum [individuals] of bands with [habitat = 3] / (count patches / 3 * sqKM)"
+
+MONITOR
+908
+10
+965
+55
+Births
+births
+17
+1
+11
+
+MONITOR
+979
+10
+1036
+55
+Deaths
+deaths
+17
+1
+11
+
+PLOT
+1320
+443
+1520
+593
+Hours Worked Per Day
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [timefarmed + timegathered + timehunted] of bands / 365 / 14"
 
 @#$#@#$#@
 ## WHAT IS IT?
